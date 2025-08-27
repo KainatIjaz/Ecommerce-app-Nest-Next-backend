@@ -1,0 +1,116 @@
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  user_id    String   @id @default(uuid())
+  email      String   @unique
+  user_name  String
+  password   String
+  role       String
+  created_at DateTime @default(now())
+
+  //relations
+  carts      Cart[]
+  orders     Order[]
+}
+
+model Cart {
+  cart_id     String      @id @default(uuid())
+  user_id     String
+  total_price Int?
+  created_at  DateTime    @default(now())
+  updated_at  DateTime    @updatedAt
+
+  //relations
+  user        User        @relation(fields: [user_id], references: [user_id])
+  items       CartItem[]
+}
+
+model CartItem {
+  cart_item_id String  @id @default(uuid())
+  cart_id      String
+  product_id   String
+  quantity     Int
+
+  //relations
+  cart    Cart    @relation(fields: [cart_id], references: [cart_id])
+  product Product @relation(fields: [product_id], references: [product_id])
+}
+
+model Order {
+  order_id    String      @id @default(uuid())
+  user_id     String
+  created_at  DateTime    @default(now())
+  status      String
+  total_price Int
+
+  //relations
+  user        User        @relation(fields: [user_id], references: [user_id])
+  items       OrderItem[]
+  transactions Transaction[]
+}
+
+model OrderItem {
+  order_item_id String   @id @default(uuid())
+  order_id      String
+  product_id    String
+  quantity      Int
+  price         Int
+  created_at    DateTime @default(now())
+
+  //relations
+  order   Order   @relation(fields: [order_id], references: [order_id])
+  product Product @relation(fields: [product_id], references: [product_id])
+}
+
+model Product {
+  product_id  String             @id @default(uuid())
+  name        String
+  description String
+  price       Int
+  image       String
+  created_at  DateTime           @default(now())
+
+  //relations
+  cartItems   CartItem[]
+  orderItems  OrderItem[]
+  categories  ProductCategory[]
+}
+
+model Category {
+  category_id   String             @id @default(uuid())
+  category_name String
+
+  // relations
+  products ProductCategory[]
+}
+
+model ProductCategory {
+  product_category_id String   @id @default(uuid())
+  product_id          String
+  category_id         String
+
+  //relations
+  product  Product  @relation(fields: [product_id], references: [product_id])
+  category Category @relation(fields: [category_id], references: [category_id])
+}
+
+model Transaction {
+  transaction_id   String   @id @default(uuid())
+  order_id         String
+  payment_method   String
+  status           String
+  transaction_date DateTime
+  created_at       DateTime @default(now())
+
+  //relations
+  order Order @relation(fields: [order_id], references: [order_id])
+}
+
