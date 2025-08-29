@@ -7,24 +7,20 @@ export class OrdersService {
 
   // Create a new order from the cart
   async createOrder(userId: string) {
-    // fetching the cart of user
     const cart = await this.prisma.cart.findFirst({
       where: { user_id: userId },
       include: { items: { include: { product: true } } },
     });
 
-    // checking if cart exists and is not empty
     if (!cart || cart.items.length === 0) {
       throw new Error('Cart is empty');
     }
 
-    // calculate total price
     const total_price = cart.items.reduce(
       (sum, item) => sum + item.product.price * item.quantity,
       0,
     );
 
-    // creating the order
     const order = await this.prisma.order.create({
       data: {
         user_id: userId,
@@ -41,7 +37,6 @@ export class OrdersService {
       include: { items: { include: { product: true } }, transactions: true },
     });
 
-    // creating a transaction that is linked to the order
     await this.prisma.transaction.create({
       data: {
         order_id: order.order_id,
@@ -51,7 +46,6 @@ export class OrdersService {
       },
     });
 
-    // clear the cart
     await this.prisma.cartItem.deleteMany({
       where: { cart_id: cart.cart_id },
     });
@@ -59,7 +53,19 @@ export class OrdersService {
     return order;
   }
 
-  // Get all orders for a user
+  // Get all orders (ADMIN only)
+  async getAllOrders() {
+    return this.prisma.order.findMany({
+      include: {
+        items: { include: { product: true } },
+        transactions: true,
+        user: true, // so Admin can also see which user placed it
+      },
+      orderBy: { created_at: 'desc' },
+    });
+  }
+
+  //  Get all orders for a user
   async getOrdersByUser(userId: string) {
     return this.prisma.order.findMany({
       where: { user_id: userId },
@@ -67,10 +73,11 @@ export class OrdersService {
         items: { include: { product: true } },
         transactions: true,
       },
+      orderBy: { created_at: 'desc' },
     });
   }
 
-  // Get one order by its ID
+  //  Get one order by its ID
   async getOrderById(orderId: string) {
     return this.prisma.order.findUnique({
       where: { order_id: orderId },

@@ -1,43 +1,63 @@
-import { Controller, Post, Patch, Delete, Get, Param, Body } from '@nestjs/common';
+//Only authenticated users can access carts.
+//A user can only manage their own cart (not someone else’s).
+//Admins don’t need cart routes.
+import { 
+  Controller, Post, Patch, Delete, Get, Param, Body, UseGuards, Request, ForbiddenException 
+} from '@nestjs/common';
 import { CartsService } from './carts.service';
+import { AuthGuard } from '@nestjs/passport';
 
+@UseGuards(AuthGuard('jwt')) // All routes require login
 @Controller('carts')
 export class CartsController {
   constructor(private readonly cartsService: CartsService) {}
 
-  @Post(':userId')
-  async getOrCreateCart(@Param('userId') userId: string) {
+  // Create or get the logged-in user's cart
+  @Post('me')
+  async getOrCreateCart(@Request() req) {
+    const userId = req.user.userId; //  Take userId from JWT, not params
     return this.cartsService.getOrCreateCart(userId);
   }
 
-  @Post(':cartId/items')
+  // Add items to the logged-in user's cart
+  @Post('me/items')
   async addItems(
-    @Param('cartId') cartId: string,
+    @Request() req,
     @Body('productId') productId: string,
     @Body('quantity') quantity: number,
   ) {
-    return this.cartsService.addItems(cartId, productId, quantity);
+    const userId = req.user.userId;
+    const cart = await this.cartsService.getOrCreateCart(userId);
+
+    return this.cartsService.addItems(cart.cart_id, productId, quantity);
   }
 
-  @Patch(':cartId/items/:itemId')
+  // Update item quantity in user's cart
+  @Patch('me/items/:itemId')
   async updateItems(
-    @Param('cartId') cartId: string,
+    @Request() req,
     @Param('itemId') itemId: string,
     @Body('quantity') quantity: number,
   ) {
-    return this.cartsService.updateItems(cartId, itemId, quantity);
+    const userId = req.user.userId;
+    const cart = await this.cartsService.getOrCreateCart(userId);
+
+    return this.cartsService.updateItems(cart.cart_id, itemId, quantity);
   }
 
-  @Delete(':cartId/items/:itemId')
-  async removeItems(
-    @Param('cartId') cartId: string,
-    @Param('itemId') itemId: string,
-  ) {
-    return this.cartsService.removeItems(cartId, itemId);
+  // Remove item from user's cart
+  @Delete('me/items/:itemId')
+  async removeItems(@Request() req, @Param('itemId') itemId: string) {
+    const userId = req.user.userId;
+    const cart = await this.cartsService.getOrCreateCart(userId);
+
+    return this.cartsService.removeItems(cart.cart_id, itemId);
   }
 
-  @Get(':userId')
-  async getCart(@Param('userId') userId: string) {
+  // Get the logged-in user's cart
+  @Get('me')
+  async getCart(@Request() req) {
+    const userId = req.user.userId;
     return this.cartsService.getCart(userId);
   }
 }

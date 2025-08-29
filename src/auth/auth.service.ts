@@ -1,5 +1,5 @@
 // src/auth/auth.service.ts
-import { Injectable } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { SignupDto } from './dto/signup.dto';
 import { LoginDto } from './dto/login.dto';
@@ -28,10 +28,10 @@ export class AuthService {
 
     // generate JWT token with id + email + role + name
     const token = this.jwtService.sign({
-      sub: user.user_id,     
-      email: user.email,     
-      role: user.role,       
-      name: user.user_name,  
+      sub: user.user_id,
+      email: user.email,
+      role: user.role,
+      name: user.user_name,
     });
 
     return { user, token };
@@ -43,10 +43,10 @@ export class AuthService {
       where: { email: data.email },
     });
 
-    if (!user) throw new Error('User not found');
+    if (!user) throw new UnauthorizedException('User not found');
 
     const valid = await bcrypt.compare(data.password, user.password);
-    if (!valid) throw new Error('Invalid password');
+    if (!valid) throw new UnauthorizedException('Invalid password');
 
     // generate JWT token 
     const token = this.jwtService.sign({

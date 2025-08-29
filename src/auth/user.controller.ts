@@ -1,8 +1,8 @@
 // src/user/user.controller.ts
 import { Controller, Get, Delete, UseGuards, Req } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
-import { Roles } from '../auth/roles.decorator';
-import { RolesGuard } from '../auth/roles.guard';
+import { Roles } from './roles.decorator';
+import { RolesGuard } from './roles.guard';
 
 @Controller('user')
 export class UserController {
